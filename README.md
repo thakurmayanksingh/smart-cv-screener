@@ -7,7 +7,7 @@ An intelligent, agentic HR tool built to automate resume parsing, eliminate hiri
 [![Gemini API](https://img.shields.io/badge/Google-GenAI-orange.svg)](https://ai.google.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-black.svg)](https://vercel.com/)
 
-**🔗 Live Demo:** [View Live Site Here](YOUR_VERCEL_LINK_HERE)
+**🔗 Live Demo:** [View Live Site Here](https://smart-cv-screener.vercel.app/)
 **🎥 Project Walkthrough:** [Watch the Loom Video](YOUR_LOOM_LINK_HERE)
 
 ---
