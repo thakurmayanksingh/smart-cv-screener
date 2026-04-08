@@ -3,74 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR AI Agent | Analysis</title>
+    <title>HR AI Agent | Batch Screener</title>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --card: #ffffff; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 800px; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        h1 { color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        :root { 
+            --primary: #2563eb; 
+            --secondary: #10b981; 
+            --dark: #1e293b;
+            --bg: #f8fafc; 
+            --card: #ffffff; 
+            --border: #e2e8f0;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 900px; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { color: var(--dark); border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-top: 0; text-align: center;}
+        
         .form-group { margin-bottom: 20px; }
-        textarea { width: 100%; height: 100px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-        .upload-area { border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; }
-        button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; }
-        #result { margin-top: 30px; display: none; padding: 20px; background: #f1f5f9; border-radius: 8px; border-left: 5px solid var(--primary); }
-        .loading { display: none; color: var(--primary); font-weight: bold; margin: 10px 0; }
-        pre { white-space: pre-wrap; font-family: inherit; }
+        textarea { width: 100%; height: 100px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-family: inherit;}
+        .upload-area { border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; background: #f8fafc;}
+        .upload-area:hover { border-color: var(--primary); background: #eff6ff;}
+        
+        .toggle-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; background: #f1f5f9; padding: 12px; border-radius: 6px;}
+        
+        button { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; font-size: 1.05rem;}
+        button:hover { background: #1d4ed8; }
+        button:disabled { opacity: 0.7; cursor: not-allowed; background: #94a3b8;}
+        
+        .loading { display: none; color: var(--primary); font-weight: bold; margin: 20px 0; text-align: center; font-size: 1.1rem; }
+        
+        /* Leaderboard Table */
+        #resultsSection { display: none; margin-top: 40px; }
+        .leaderboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+        .leaderboard-header h2 { margin: 0; color: var(--dark);}
+        
+        .header-actions { display: flex; gap: 10px; }
+        #compareBtn { width: auto; padding: 8px 16px; font-size: 0.9rem; background: var(--dark); }
+        #compareBtn:hover { background: #0f172a; }
+        #exportBtn { width: auto; padding: 8px 16px; font-size: 0.9rem; background: var(--secondary); }
+        #exportBtn:hover { background: #059669; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f1f5f9; color: #475569; font-weight: 600; }
+        tr.candidate-row { cursor: pointer; transition: 0.2s; }
+        tr.candidate-row:hover { background: #f8fafc; }
+        .rank-badge { background: var(--primary); color: white; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.9rem;}
+        .score-high { color: var(--secondary); font-weight: bold; }
+        .score-med { color: #f59e0b; font-weight: bold; }
+        .score-low { color: #ef4444; font-weight: bold; }
+        
+        /* Checkbox Styling */
+        input[type="checkbox"].compare-cb { width: 18px; height: 18px; cursor: pointer; }
+
+        /* Detail Modal/Section */
+        #detailView { display: none; background: #f8fafc; padding: 25px; border-radius: 8px; border: 1px solid var(--border); margin-top: 20px; border-top: 4px solid var(--primary);}
+        .detail-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;}
+        .detail-header h2 { margin: 0; color: var(--dark); }
+        
+        .skills-container { display: flex; gap: 20px; margin-bottom: 20px;}
+        .skill-group { flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border);}
+        .skill-group h4 { margin: 0 0 10px 0; color: #64748b; font-size: 0.9rem;}
+        .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .tag-match { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;}
+        .tag-miss { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;}
+
+        .analysis-box { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        pre { white-space: pre-wrap; font-family: inherit; line-height: 1.6; margin: 0; color: #334155; }
+        
+        .btn-secondary { background: var(--secondary); margin-top: 20px; width: auto; font-size: 0.95rem; padding: 10px 20px;}
+        .btn-secondary:hover { background: #059669; }
+
+        /* Compare View Section */
+        #compareView { display: none; background: #fff; padding: 25px; border-radius: 8px; border: 1px solid var(--border); margin-top: 20px; border-top: 4px solid var(--dark); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);}
+        #compareView h2 { margin-top: 0; color: var(--dark); border-bottom: 1px solid var(--border); padding-bottom: 10px;}
+        #compareLoading { display: none; color: var(--dark); font-weight: bold; text-align: center; padding: 20px;}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>HR AI Agent</h1>
+        <h1>HR AI Agent 🤖 <br><span style="font-size: 1rem; color: #64748b; font-weight: normal;">Batch Screener & Ranker</span></h1>
+        
         <form id="uploadForm">
             <div class="form-group">
-                <label><strong>Job Description</strong></label>
-                <textarea name="jd" id="jd" placeholder="Paste requirements here..."></textarea>
+                <label><strong>Job Description Requirements</strong></label>
+                <textarea name="jd" id="jd" placeholder="Paste the target job description here..." required></textarea>
             </div>
             <div class="form-group">
-                <label><strong>Resume (PDF)</strong></label>
+                <label><strong>Upload Candidates (Multiple PDFs)</strong></label>
                 <div class="upload-area">
-                    <input type="file" name="cv" id="cv" accept=".pdf" required>
+                    <input type="file" name="cv" id="cv" accept=".pdf" multiple required>
                 </div>
             </div>
-            <button type="submit" id="btn">Run Agentic Analysis</button>
+            
+            <div class="toggle-container">
+                <input type="checkbox" id="blindMode" name="blindMode" value="true">
+                <label for="blindMode"><strong>🛡️ Enable Blind Screening</strong> (Hides Demographics & Institutions)</label>
+            </div>
+
+            <button type="submit" id="submitBtn">Run Batch Analysis & Rank</button>
         </form>
 
-        <div class="loading" id="loader">Agent is reasoning... please wait.</div>
+        <div class="loading" id="loader">Agent is parsing and ranking candidates...</div>
 
-        <div id="result">
-            <h3>Analysis Report</h3>
-            <pre id="analysisText"></pre>
+        <div id="resultsSection">
+            <div class="leaderboard-header">
+                <h2>🏆 Candidate Leaderboard</h2>
+                <div class="header-actions">
+                    <button type="button" id="compareBtn" disabled>⚖️ Compare (0/2)</button>
+                    <button type="button" id="exportBtn" onclick="exportLeaderboard()">📥 Export Report</button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Compare</th>
+                        <th>Rank</th>
+                        <th>Candidate File</th>
+                        <th>Match Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                </tbody>
+            </table>
+            
+            <div id="compareView">
+                <h2>⚖️ Head-to-Head Comparison</h2>
+                <div id="compareLoading">AI is analyzing both candidates side-by-side...</div>
+                <div id="compareContent" style="background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; display: none;">
+                    <pre id="compareText" style="font-family: inherit; margin: 0;"></pre>
+                </div>
+            </div>
+
+            <div id="detailView">
+                <div class="detail-header">
+                    <h2 id="detailName">Candidate Details</h2>
+                    <span class="rank-badge" id="detailScore" style="font-size: 1.2rem;">0%</span>
+                </div>
+                
+                <div class="skills-container">
+                    <div class="skill-group">
+                        <h4>✓ Verified Skills</h4>
+                        <div class="tag-list" id="matchTags"></div>
+                    </div>
+                    <div class="skill-group">
+                        <h4>⚠️ Missing Requirements</h4>
+                        <div class="tag-list" id="missTags"></div>
+                    </div>
+                </div>
+
+                <div class="analysis-box">
+                    <h4 style="margin-top: 0; color: #64748b;">AI Analysis Report</h4>
+                    <pre id="analysisText"></pre>
+                    
+                    <div id="interviewSection" style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 20px; display: none;">
+                        <h4 style="color: var(--primary); margin-top: 0;">🎯 Tailored Interview Script</h4>
+                        <div style="background: #fdfdfd; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <pre id="questionsContent" style="font-family: inherit; margin: 0;"></pre>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-secondary" id="genQuestionsBtn">
+                        Generate Interview Script
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        let batchData = [];
+        let currentCandidateIndex = null;
+
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btn');
+            
+            const btn = document.getElementById('submitBtn');
             const loader = document.getElementById('loader');
-            const resultDiv = document.getElementById('result');
-            const textSpace = document.getElementById('analysisText');
-
+            const resultsSection = document.getElementById('resultsSection');
+            const detailView = document.getElementById('detailView');
+            const compareView = document.getElementById('compareView');
+            
             btn.disabled = true;
             loader.style.display = 'block';
-            resultDiv.style.display = 'none';
+            resultsSection.style.display = 'none';
+            detailView.style.display = 'none'; 
+            compareView.style.display = 'none';
 
             const formData = new FormData(e.target);
+
             try {
-                const resp = await fetch('/api/analyze-cv', { method: 'POST', body: formData });
-                const data = await resp.json();
+                const resp = await fetch('/api/analyze-batch', { method: 'POST', body: formData });
+                const jsonResponse = await resp.json();
                 
+                if(jsonResponse.status === "Success") {
+                    batchData = jsonResponse.data;
+                    renderLeaderboard();
+                    resultsSection.style.display = 'block';
+                } else {
+                    alert("Error: " + jsonResponse.error);
+                }
+            } catch (err) {
+                alert("Connection failed. Make sure your server is running.");
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
+        };
+
+        function renderLeaderboard() {
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = '';
+            
+            document.getElementById('compareBtn').innerText = "⚖️ Compare (0/2)";
+            document.getElementById('compareBtn').disabled = true;
+
+            batchData.forEach((candidate, index) => {
+                const score = candidate.match_percentage || 0;
+                let scoreClass = 'score-low';
+                if(score >= 75) scoreClass = 'score-high';
+                else if(score >= 50) scoreClass = 'score-med';
+
+                const tr = document.createElement('tr');
+                tr.className = 'candidate-row';
+                
+                tr.innerHTML = `
+                    <td onclick="event.stopPropagation()">
+                        <input type="checkbox" class="compare-cb" value="${index}" onchange="handleCheckboxChange(this)">
+                    </td>
+                    <td onclick="showDetails(${index})"><span class="rank-badge">#${index + 1}</span></td>
+                    <td onclick="showDetails(${index})" style="font-weight: 500;">📄 ${candidate.filename}</td>
+                    <td onclick="showDetails(${index})" class="${scoreClass}">${score}% Match</td>
+                    <td onclick="showDetails(${index})"><span style="color: var(--primary); font-size: 0.9rem; text-decoration: underline;">View Report</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // NEW: Export Functionality
+        function exportLeaderboard() {
+            if (batchData.length === 0) {
+                alert("No data to export.");
+                return;
+            }
+
+            // Ask the user for the number of candidates
+            let defaultVal = Math.min(5, batchData.length);
+            let input = prompt(`How many top candidates do you want to export? (Max available: ${batchData.length})`, defaultVal);
+            
+            if (input === null || input.trim() === "") return; // User cancelled
+
+            let numToExport = parseInt(input);
+            if (isNaN(numToExport) || numToExport <= 0) {
+                alert("Please enter a valid positive number.");
+                return;
+            }
+
+            // Cap the number if they type a number higher than available resumes
+            if (numToExport > batchData.length) {
+                numToExport = batchData.length;
+            }
+
+            // Build CSV Content
+            let csvContent = "Rank,Candidate File,Match Score (%),Matching Skills,Missing Skills\n";
+            
+            for (let i = 0; i < numToExport; i++) {
+                let candidate = batchData[i];
+                
+                // Wrap arrays in double quotes to prevent CSV cell breaking on commas
+                let matchSkills = `"${(candidate.matching_skills || []).join(", ")}"`;
+                let missSkills = `"${(candidate.missing_skills || []).join(", ")}"`;
+                
+                let row = `${i + 1},${candidate.filename},${candidate.match_percentage || 0},${matchSkills},${missSkills}`;
+                csvContent += row + "\n";
+            }
+
+            // Create a Blob and trigger the browser download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Top_${numToExport}_Candidates_Report.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleCheckboxChange(checkbox) {
+            const checkedBoxes = document.querySelectorAll('.compare-cb:checked');
+            const compareBtn = document.getElementById('compareBtn');
+            
+            if (checkedBoxes.length > 2) {
+                checkbox.checked = false;
+                alert("You can only compare exactly 2 candidates.");
+                return;
+            }
+            
+            compareBtn.innerText = `⚖️ Compare (${checkedBoxes.length}/2)`;
+            compareBtn.disabled = checkedBoxes.length !== 2;
+        }
+
+        document.getElementById('compareBtn').onclick = async () => {
+            const checkedBoxes = document.querySelectorAll('.compare-cb:checked');
+            if(checkedBoxes.length !== 2) return;
+
+            const c1 = batchData[checkedBoxes[0].value];
+            const c2 = batchData[checkedBoxes[1].value];
+            const jd = document.getElementById('jd').value;
+
+            const compareView = document.getElementById('compareView');
+            const detailView = document.getElementById('detailView');
+            const loading = document.getElementById('compareLoading');
+            const contentDiv = document.getElementById('compareContent');
+            const textSpace = document.getElementById('compareText');
+
+            detailView.style.display = 'none';
+            compareView.style.display = 'block';
+            contentDiv.style.display = 'none';
+            loading.style.display = 'block';
+            compareView.scrollIntoView({ behavior: 'smooth' });
+
+            try {
+                const resp = await fetch('/api/compare', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ candidate1: c1, candidate2: c2, jd: jd })
+                });
+                
+                const data = await resp.json();
                 if(data.status === "Success") {
-                    textSpace.innerText = data.analysis;
-                    resultDiv.style.display = 'block';
+                    textSpace.innerText = data.comparison;
+                    loading.style.display = 'none';
+                    contentDiv.style.display = 'block';
+                } else {
+                    alert("Error: " + data.error);
+                    compareView.style.display = 'none';
+                }
+            } catch (err) {
+                alert("Failed to connect.");
+                compareView.style.display = 'none';
+            }
+        };
+
+        function showDetails(index) {
+            currentCandidateIndex = index;
+            const data = batchData[index];
+            const detailView = document.getElementById('detailView');
+            const compareView = document.getElementById('compareView'); 
+            
+            compareView.style.display = 'none'; 
+            
+            document.getElementById('detailName').innerText = data.filename;
+            document.getElementById('detailScore').innerText = `${data.match_percentage}% Match`;
+            
+            const matchTags = document.getElementById('matchTags');
+            matchTags.innerHTML = '';
+            if(data.matching_skills && data.matching_skills.length > 0) {
+                data.matching_skills.forEach(skill => {
+                    matchTags.innerHTML += `<span class="tag tag-match">${skill}</span>`;
+                });
+            } else { matchTags.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">None detected</span>'; }
+
+            const missTags = document.getElementById('missTags');
+            missTags.innerHTML = '';
+            if(data.missing_skills && data.missing_skills.length > 0) {
+                data.missing_skills.forEach(skill => {
+                    missTags.innerHTML += `<span class="tag tag-miss">${skill}</span>`;
+                });
+            } else { missTags.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">No major gaps</span>'; }
+
+            document.getElementById('analysisText').innerText = data.analysis;
+
+            document.getElementById('interviewSection').style.display = 'none';
+            document.getElementById('questionsContent').innerText = '';
+
+            detailView.style.display = 'block';
+            detailView.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.getElementById('genQuestionsBtn').onclick = async () => {
+            if (currentCandidateIndex === null) return;
+            
+            const btn = document.getElementById('genQuestionsBtn');
+            const content = document.getElementById('questionsContent');
+            const section = document.getElementById('interviewSection');
+            const candidate = batchData[currentCandidateIndex];
+            const jd = document.getElementById('jd').value;
+
+            btn.disabled = true;
+            btn.innerText = "Generating Script...";
+
+            try {
+                const resp = await fetch('/api/generate-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        analysis: candidate.analysis,
+                        missing_skills: candidate.missing_skills,
+                        jd: jd
+                    })
+                });
+                
+                const data = await resp.json();
+                if(data.status === "Success") {
+                    content.innerText = data.questions;
+                    section.style.display = 'block';
                 } else {
                     alert("Error: " + data.error);
                 }
             } catch (err) {
-                alert("Connection failed.");
+                alert("Failed to connect.");
             } finally {
                 btn.disabled = false;
-                loader.style.display = 'none';
+                btn.innerText = "Generate Interview Script";
             }
         };
     </script>
