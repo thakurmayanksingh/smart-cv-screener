@@ -28,7 +28,8 @@ if not api_key_val:
     print("CRITICAL: GOOGLE_API_KEY not found in environment variables.")
 
 client = genai.Client(api_key=api_key_val)
-MODEL_ID = "gemini-2.5-flash"
+# MODEL_ID = "gemini-2.5-flash"
+MODEL_ID = "gemini-flash-latest"
 
 @app.route('/')
 def home():
